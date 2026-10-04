@@ -326,6 +326,7 @@ func isFreeModelEntry(m Model) bool {
 }
 
 func startProxy(host string, port int) error {
+	log.Printf("Data directory: %s (set %s to override)", currentDataDir(), dataDirEnv)
 	p := loadPool()
 	loadRequestLogs()
 	activeCount := 0

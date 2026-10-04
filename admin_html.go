@@ -993,7 +993,7 @@ textarea{resize:vertical;min-height:88px;font-family:ui-monospace,'SF Mono','Cas
     <div class="section-body">
       <div style="font-size:13px;color:var(--text2);line-height:1.8">
         <div>• 本程序仅在本地运行，默认监听 <code style="background:var(--surface2);padding:1px 5px;border-radius:3px;font-size:12px">127.0.0.1:3457</code>，不对外暴露。</div>
-        <div>• 账号凭据（refreshToken）存储在可执行文件同目录的 <code style="background:var(--surface2);padding:1px 5px;border-radius:3px;font-size:12px">.cline-accounts.json</code> 中，明文保存，请注意保护。</div>
+        <div>• 账号凭据（refreshToken）存储在数据目录的 <code style="background:var(--surface2);padding:1px 5px;border-radius:3px;font-size:12px">.cline-accounts.json</code>（Docker 中位于 /app/data，可用 CLINE2API_DATA_DIR 配置）中，明文保存，请注意保护。</div>
         <div>• 所有 API 请求通过本机代理转发至 Cline 官方服务器，不经过任何第三方。</div>
         <div>• 关闭窗口即停止服务，无后台驻留进程。</div>
       </div>
@@ -1153,8 +1153,8 @@ const I18N = {
   '数据与隐私': 'Data & Privacy',
   '• 本程序仅在本地运行，默认监听': '• Runs locally, listens on',
   '，不对外暴露。': ', not exposed externally.',
-  '• 账号凭据（refreshToken）存储在可执行文件同目录的': '• Credentials (refreshToken) stored as plaintext in',
-  '中，明文保存，请注意保护。': '; keep them safe.',
+  '• 账号凭据（refreshToken）存储在数据目录的': '• Credentials (refreshToken) are stored in plaintext in the file ',
+  '（Docker 中位于 /app/data，可用 CLINE2API_DATA_DIR 配置）中，明文保存，请注意保护。': ' (in Docker: /app/data, configurable via CLINE2API_DATA_DIR); keep them safe.',
   '• 所有 API 请求通过本机代理转发至 Cline 官方服务器，不经过任何第三方。': '• All API requests are proxied to Cline\'s official servers, never through third parties.',
   '• 关闭窗口即停止服务，无后台驻留进程。': '• Closing the window stops the service; no background process.',
   'Cline2API 管理后台': 'Cline2API Admin',

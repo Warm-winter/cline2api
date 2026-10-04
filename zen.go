@@ -293,9 +293,10 @@ func getZenConfig() *zenConfigData {
 	defer zenConfigMu.Unlock()
 	if zenConfig == nil {
 		cfg := defaultZenConfig()
-		if data, err := os.ReadFile(resolveDataPath(".cline-zen.json")); err == nil {
+		zenPath := resolveDataPath(".cline-zen.json")
+		if data, err := os.ReadFile(zenPath); err == nil {
 			if err := json.Unmarshal(data, cfg); err != nil {
-				log.Printf("zen config parse failed: %v", err)
+				backupCorruptFile(zenPath, err)
 			}
 		}
 		if cfg.Key == "" {
@@ -335,7 +336,7 @@ func setZenConfig(c *zenConfigData) {
 	zenConfigMu.Unlock()
 
 	data, _ := json.MarshalIndent(c, "", "  ")
-	if err := os.WriteFile(resolveDataPath(".cline-zen.json"), data, 0600); err != nil {
+	if err := writeFileAtomic(resolveDataPath(".cline-zen.json"), data, 0600); err != nil {
 		log.Printf("zen config save failed: %v", err)
 	}
 	rebuildZenTransport()
