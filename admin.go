@@ -91,6 +91,7 @@ func registerAdminRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/api/models/add", auth(handleAdminModelAdd))
 	mux.HandleFunc("/admin/api/models/delete", auth(handleAdminModelDelete))
 	mux.HandleFunc("/admin/api/models/context", auth(handleAdminModelContext))
+	mux.HandleFunc("/admin/api/models/toggle", auth(handleAdminModelToggle))
 	mux.HandleFunc("/admin/api/config", auth(handleAdminConfig))
 	mux.HandleFunc("/admin/api/config/update", auth(handleAdminUpdateConfig))
 	mux.HandleFunc("/admin/api/providers", auth(handleProvidersList))
@@ -1366,6 +1367,68 @@ func handleAdminModelContext(w http.ResponseWriter, r *http.Request) {
 	savePool()
 	log.Printf("  model context updated: %s ctx=%d out=%d", req.ID, req.Context, req.Output)
 	writeAPI(w, http.StatusOK, apiResponse{Success: true, Message: tAPI(r, "model_context_saved")})
+}
+
+// POST /admin/api/models/toggle  body: { ids: [...], disabled }
+// 启用/停用模型（单个或批量）：停用后不进客户端模型列表、直接请求被拒绝、
+// 默认模型与回退链自动跳过；同步保留该标记。停用当前默认模型时清空默认。
+func handleAdminModelToggle(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		writeAPI(w, http.StatusMethodNotAllowed, apiResponse{Error: tAPI(r, "method_not_allowed")})
+		return
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeAPI(w, http.StatusBadRequest, apiResponse{Error: err.Error()})
+		return
+	}
+	defer r.Body.Close()
+
+	var req struct {
+		IDs      []string `json:"ids"`
+		Disabled bool     `json:"disabled"`
+	}
+	if err := json.Unmarshal(body, &req); err != nil {
+		writeAPI(w, http.StatusBadRequest, apiResponse{Error: tAPI(r, "invalid_json")})
+		return
+	}
+	ids := make([]string, 0, len(req.IDs))
+	for _, id := range req.IDs {
+		if id = strings.TrimSpace(id); id != "" {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		writeAPI(w, http.StatusBadRequest, apiResponse{Error: tAPI(r, "model_id_required")})
+		return
+	}
+
+	target := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		target[id] = true
+	}
+	p := loadPool()
+	poolMu.Lock()
+	changed := 0
+	for i, m := range p.Models {
+		if !target[m.ID] {
+			continue
+		}
+		p.Models[i].Disabled = req.Disabled
+		changed++
+		// 停用当前默认模型时清空，回退到自动挑选逻辑（与删除行为一致）
+		if req.Disabled && p.DefaultModel == m.ID {
+			p.DefaultModel = ""
+		}
+	}
+	poolMu.Unlock()
+	if changed == 0 {
+		writeAPI(w, http.StatusNotFound, apiResponse{Error: tAPI(r, "model_not_found")})
+		return
+	}
+	savePool()
+	log.Printf("  model toggle: %d models -> disabled=%v", changed, req.Disabled)
+	writeAPI(w, http.StatusOK, apiResponse{Success: true, Message: tAPI(r, "model_status_saved")})
 }
 
 // GET /admin/api/stats

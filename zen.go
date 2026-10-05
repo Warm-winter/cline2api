@@ -1140,10 +1140,14 @@ func syncZenModels() modelSyncResult {
 		}
 	}
 	fillMeta := func(m Model) Model {
-		if om, ok := oldZen[m.ID]; ok && om.MetaLocked && om.Context > 0 {
-			m.Context, m.Output = om.Context, om.Output
-			m.MetaLocked = true
-			return m
+		if om, ok := oldZen[m.ID]; ok {
+			// 用户手动停用的模型在重建条目时保留标记，避免同步冲掉停用状态
+			m.Disabled = om.Disabled
+			if om.MetaLocked && om.Context > 0 {
+				m.Context, m.Output = om.Context, om.Output
+				m.MetaLocked = true
+				return m
+			}
 		}
 		for _, sm := range zenSeedModels {
 			if sm.ID == m.ID {
